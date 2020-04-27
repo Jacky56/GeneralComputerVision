@@ -5,8 +5,8 @@ from keras.utils import plot_model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ModelCheckpoint, TensorBoard
 
-class BaseModel():
 
+class BaseModel():
     model = None
     checkpoint = None
     tensorboard = None
@@ -18,19 +18,19 @@ class BaseModel():
         self.tensorboard = self.set_tensorboard(tensorboard)
 
     def set_model(self, model):
-        if model.isinstance(Model):
+        if isinstance(model, Model) or not model:
             self.model = model
         else:
             raise Exception("this is not Keras Model Type, type given: {}".format(type(model)))
 
     def set_checkpoint(self, checkpoint):
-        if checkpoint.isinstance(ModelCheckpoint):
+        if isinstance(checkpoint, ModelCheckpoint) or not checkpoint:
             self.checkpoint = checkpoint
         else:
             raise Exception("this is not Keras ModelCheckpoint Type, type given: {}".format(type(checkpoint)))
 
     def set_tensorboard(self, tensorboard):
-        if tensorboard.isinstance(TensorBoard):
+        if isinstance(tensorboard, TensorBoard) or not tensorboard:
             self.tensorboard = tensorboard
         else:
             raise Exception("this is not Keras TensorBoard Type, type given: {}".format(type(tensorboard)))
@@ -41,13 +41,27 @@ class BaseModel():
         else:
             raise Exception("model needs to be set, use BaseModel.set_model(<model>)")
 
-    def predict(self, data):
+    def save_model(self, target):
         if self.model:
-            return self.model.predict(data)
+            self.model.save(target)
         else:
             raise Exception("model needs to be set, use BaseModel.set_model(<model>)")
 
-    def fit_generator(self, generator_train, generator_validation, steps_train=10, steps_validation=10, epochs=3):
+    def predict(self, df, x_col, base_directory, steps=1):
+        if self.model:
+            image_generator = self.create_image_generator(df, x_col, base_directory)
+            return self.model.predict_generator(image_generator, steps=steps)
+        else:
+            raise Exception("model needs to be set, use BaseModel.set_model(<model>)")
+
+    def evaluate(self, df, x_col, base_directory, steps=1):
+        if self.model:
+            image_generator = self.create_image_generator(df, x_col, base_directory)
+            return self.model.evaluate_generator(image_generator, steps=steps)
+        else:
+            raise Exception("model needs to be set, use BaseModel.set_model(<model>)")
+
+    def fit_generator(self, generator_train, generator_validation, steps_train=32, steps_validation=32, epochs=3):
         if self.model and self.checkpoint and self.tensorboard:
             callbacks = [self.tensorboard, self.checkpoint]
 
@@ -70,8 +84,8 @@ class BaseModel():
                 """.format(self.model, self.checkpoint, self.tensorboard)
             )
 
-    def create_image_generator(self, df, x_col, base_directory, batch_size=32, target_size=(64,64), rotation_range=15,
-                               width_shift_range=0.05,height_shift_range=0.05, shear_range=0.05, zoom_range=0.1,
+    def create_image_generator(self, df, x_col, base_directory, batch_size=32, target_size=(64, 64), rotation_range=15,
+                               width_shift_range=0.05, height_shift_range=0.05, shear_range=0.05, zoom_range=0.1,
                                horizontal_flip=True):
 
         image_generator_settings = ImageDataGenerator(
@@ -84,7 +98,9 @@ class BaseModel():
             horizontal_flip=horizontal_flip,
             fill_mode='nearest')
 
-        y_col = list(df.columns).remove(x_col)
+        y_col = list(df.columns)
+        y_col.remove(x_col)
+
         image_generator = image_generator_settings.flow_from_dataframe(
             dataframe=df,
             directory=base_directory,
@@ -97,8 +113,6 @@ class BaseModel():
 
         return image_generator
 
-
 if __name__ == "__main__":
     a = BaseModel()
-    a.fit_generator("asd",23)
-
+    a.fit_generator("asd", 23)
