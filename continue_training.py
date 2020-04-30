@@ -8,7 +8,7 @@ if __name__ == "__main__":
 
     model_name = "discriminator_2x2_tiny_label_25.h5"
 
-    source_dir = "./source/mtcnn_64/"
+    source_dir = "E:/Data/mtcnn_64/"
     df = pd.read_csv("./source/mtcnn_64_drop_col.txt", sep=" ")
     model = VggRes64.VggRes64()
 
